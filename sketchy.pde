@@ -55,7 +55,7 @@ void setup() {
 }
 
 public void fill() {
-  dfile.fill(selrectx, selrecty, selrectw, selrecth, (char)(selectedchar + (selectedchar > 63 ? 64: 0)));
+  dfile.fill(selrectx, selrecty, selrectw, selrecth, (char)selectedchar);
 }
 
 public void invert() {
@@ -108,8 +108,12 @@ void draw() {
     image(dfile.charimg(i+128), 10 + 16 * (i % 32), 490 + 32 + 16 * (i / 32));
   }
   
-  int scx = selectedchar % 32;
-  int scy = selectedchar / 32;
+  int sc = selectedchar;
+  if (sc > 127) {
+    sc -= 64;
+  }
+  int scx = sc % 32;
+  int scy = sc / 32;
   stroke(scy > 1 ? 255 : 0);
   rect(scx * 16 + 10-2, scy * 16 + 490-2, 11, 11);
 }
@@ -120,7 +124,7 @@ int mouseOverChar() {
   if (mouseY >= 490 - 4 && mouseY < 490 - 4 + 64 && mouseX >= 6 && mouseX < 10 + 31 * 16 + 8 + 4) {
     int x = (mouseX - (10 - 4)) / 16;
     int y = (mouseY - (490 - 4)) / 16;
-    return x + 32 * y;
+    return x + 32 * y + (y > 1 ? 64 : 0);
   }
 
   return -1;
@@ -199,11 +203,13 @@ void keyPressed() {
   }
 
   if (selection) return;
-
   if (key == BACKSPACE) {
     dfile.cursorleft();
     dfile.putc(' ');
     dfile.cursorleft();
+    return;
+  } else if (keyCode == TAB) {
+    dfile.putz(selectedchar);
     return;
   }
 

@@ -91,6 +91,11 @@ class DFileZX81
     cursorright();
   }
 
+  void putz(int c) {
+    _dfile[_cursorx + 32 * _cursory] = c;
+    cursorright();
+  }
+
   void setz(int x, int y, char c) {
     _dfile[x + 32 * y] = c;
   }

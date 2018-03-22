@@ -48,7 +48,7 @@ class Font
       return _glyphs[15]; // '?'
     }
 
-    if (c > 128) {
+    if (c > 127) {
       c-= 64;
     }
     return _glyphs[c];

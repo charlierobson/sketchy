@@ -4,6 +4,10 @@ class DFile
   Font _font;
   PGraphics _bg;
 
+  public static final int RESET = 0;
+  public static final int SET = 1;
+  public static final int XOR = 2;
+
   DFile(Font font) {
     _font = font;
     cls();
@@ -21,37 +25,49 @@ class DFile
   void set(int x, int y, int c) {
     _dfile[x + 32 * y] = c;
   }
-/*
-GET_BLOCK:
-  LD      A,$01        
-        SRA     C              
-        JR      NC,EVEN_Y
 
-        LD      A,$04
-
-
-EVEN_Y: SRA     B          
-        JR      NC,EVEN_X  
-
-        RLCA      ; 1 OR 4 BECOMES 2 OR 8                
-
-EVEN_X:
-  LD  B,A    ;SAVE the new pixwl block in b
-
-  LD   A,(HL)    ;GET BYTE FROM SCREEN
-  RLCA
-  CP  16
-  JR  NC,A_ZERO
-  RRCA
-  JR  NC,GOOD_CHAR
-  XOR  $8F    ;ELSE INVERTED CHAR
-  JR  GOOD_CHAR
-A_ZERO:
-  XOR  A
-GOOD_CHAR:
-  RET
-  */
   void plot(int x, int y, int mode) {
+    int b = (y & 1) == 0 ? 1 : 4;
+    if ((x & 1) != 0) {
+      b *= 2;
+    }
+
+    int c = _dfile[x / 2 + (y / 2) * 32];
+    if ((c & 127) > 8) {
+      c = 0;
+    }
+    if (c > 127) {
+      c ^= 0x8f;
+    }
+
+    if (mode == 0) {
+      c = (~b) & c;
+    } else if (mode == 1) {
+      c |= b;
+    } else {
+      c = c ^ b;
+    }
+    if (c > 7) {
+      c ^= 0x8f;
+    }
+    _dfile[x / 2 + (y / 2) * 32] = c;
+  }
+
+  boolean pleek(int x, int y) {
+    int b = (y & 1) == 0 ? 1 : 4;
+    if ((x & 1) != 0) {
+      b *= 2;
+    }
+
+    int c = _dfile[x / 2 + (y / 2) * 32];
+    if ((c & 127) > 8) {
+      c = 0;
+    }
+    if (c > 127) {
+      c ^= 0x8f;
+    }
+
+    return (c & b) != 0;
   }
 
   PImage render() {

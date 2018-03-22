@@ -14,20 +14,44 @@ void setup() {
 
 
 void draw() {
+  background(200);
   image(dfile.render(), 0, 0, 256 * sf, 192 * sf);
+  
+  fill(0);
+  text(ctrl ? "Draw mode: PLOT" : "Draw mode: CHAR", 8, 400);
 }
 
 
 void updateBit(int mode) {
-  int scx = mouseX / sf / 4;
-  int scy = mouseY / sf / 4;
+  int scx = Math.max(Math.min(mouseX / sf / 4, 63), 0);
+  int scy = Math.max(Math.min(mouseY / sf / 4, 47), 0);
   dfile.plot(scx, scy, mode);
 }
 
+
+int mode;
+boolean ctrl;
+
+void mousePressed() {
+  int scx = Math.max(Math.min(mouseX / sf / 4, 63), 0);
+  int scy = Math.max(Math.min(mouseY / sf / 4, 47), 0);
+  mode = dfile.pleek(scx, scy) ? DFile.RESET : DFile.SET;
+}
+
 void mouseDragged() {
-  updateBit(1); // set
+  if (ctrl) updateBit(mode);
 }
 
 void mouseClicked() {
-  updateBit(2); // xor
+  if (ctrl) {
+    updateBit(DFile.XOR);
+  }
+}
+
+void keyPressed() {
+  ctrl = key==CODED && keyCode == CONTROL;
+}
+
+void keyReleased() {
+  ctrl = !(key==CODED && keyCode == CONTROL);
 }

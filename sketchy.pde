@@ -55,15 +55,15 @@ void setup() {
 }
 
 public void fill() {
-  dfile.fill(selrectx, selrecty, selrectw, selrecth, (char)128);
+  dfile.fill(selrectx, selrecty, selrectw, selrecth, (char)(selectedchar + (selectedchar > 63 ? 64: 0)));
 }
 
 public void invert() {
-    for (int yy = selrecty; yy < selrecty + selrecth; ++yy) {
-      for (int xx = selrectx; xx < selrectx + selrectw; ++xx) {
-        dfile.setz(xx, yy, (char)(dfile.getc(xx, yy) ^ 128));
-      }
+  for (int yy = selrecty; yy < selrecty + selrecth; ++yy) {
+    for (int xx = selrectx; xx < selrectx + selrectw; ++xx) {
+      dfile.setz(xx, yy, (char)(dfile.getc(xx, yy) ^ 128));
     }
+  }
 }
 
 public void load() {
@@ -93,8 +93,8 @@ void draw() {
 
   fill(0);
   text(ctrl ? "Draw mode: PLOT" : "Draw mode: CHAR", 8, 400);
+  noFill();
   if (!ctrl) {
-    noFill();
     stroke((millis() & 512) == 512 ? color(128, 0, 0) : color(0, 128, 0));
 
     if (selection) {
@@ -107,8 +107,24 @@ void draw() {
     image(dfile.charimg(i), 10 + 16 * (i % 32), 490 + 16 * (i / 32));
     image(dfile.charimg(i+128), 10 + 16 * (i % 32), 490 + 32 + 16 * (i / 32));
   }
+  
+  int scx = selectedchar % 32;
+  int scy = selectedchar / 32;
+  stroke(scy > 1 ? 255 : 0);
+  rect(scx * 16 + 10-2, scy * 16 + 490-2, 11, 11);
 }
 
+int selectedchar = 0;
+
+int mouseOverChar() {
+  if (mouseY >= 490 - 4 && mouseY < 490 - 4 + 64 && mouseX >= 6 && mouseX < 10 + 31 * 16 + 8 + 4) {
+    int x = (mouseX - (10 - 4)) / 16;
+    int y = (mouseY - (490 - 4)) / 16;
+    return x + 32 * y;
+  }
+
+  return -1;
+}
 
 void updateBit(int mode) {
   dfile.plot(mxhr(), myhr(), mode);
@@ -142,20 +158,24 @@ void mouseDragged() {
   }
 }
 
-
 void mouseClicked() {
-  if (!mouseInZeddyScreen()) return;
+  if (mouseInZeddyScreen()) {
+    selection = false;
 
-  selection = false;
-
-  if (ctrl) {
-    updateBit(DFileZX81.XOR);
+    if (ctrl) {
+      updateBit(DFileZX81.XOR);
+    } else {
+      dfile.setcurpos(mx(), my());
+      selrectx = 0;
+      selrecty = 0;
+      selrectw = 32;
+      selrecth = 24;
+    }
   } else {
-    dfile.setcurpos(mx(), my());
-    selrectx = 0;
-    selrecty = 0;
-    selrectw = 32;
-    selrecth = 24;
+    int charnum = mouseOverChar();
+    if (charnum != -1) {
+      selectedchar = charnum;
+    }
   }
 }
 

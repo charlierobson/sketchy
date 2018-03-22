@@ -1,29 +1,72 @@
-class DFile
+class DFileZX81
 {
   int[] _dfile;
   Font _font;
   PGraphics _bg;
+  int _cursorx, _cursory;
 
   public static final int RESET = 0;
   public static final int SET = 1;
   public static final int XOR = 2;
 
-  DFile(Font font) {
-    _font = font;
-    cls();
+  DFileZX81() {
     _bg = createGraphics(256, 192);
+    _font = new Font("data/zx81.fnt");
+    cls();
+  }
+
+  void setcurpos(int x, int y) {
+    _cursorx = x;
+    _cursory = y;
+  }
+
+  int cursorx() {
+    return _cursorx;
+  }
+  
+  int cursory() {
+    return _cursory;
   }
 
   void cls() {
     _dfile = new int[32*24];
+    _cursorx = 0;
+    _cursory = 0;
   }
 
-  int get(int x, int y) {
+  void cursorback() {
+    --_cursorx;
+    if (_cursorx == -1) {
+      _cursorx = 31;
+      --_cursory;
+      if (_cursory < 0) {
+        _cursory = 23;
+      }
+    }
+  }
+
+  void cursorforward() {
+    _cursorx++;
+    if (_cursorx == 32) {
+      _cursorx = 0;
+      _cursory ++;
+      if (_cursory == 24) {
+        _cursory = 0;
+      }
+    }
+  }
+
+  void putc(char c) {
+    _dfile[_cursorx + 32 * _cursory] = Charxlate.a2z(c);
+    cursorforward();
+  }
+
+  int getc(int x, int y) {
     return _dfile[x + 32 * y];
   }
 
-  void set(int x, int y, int c) {
-    _dfile[x + 32 * y] = c;
+  void setc(int x, int y, char c) {
+    _dfile[x + 32 * y] = Charxlate.a2z(c);
   }
 
   void plot(int x, int y, int mode) {
@@ -89,5 +132,22 @@ class DFile
     _bg.endDraw();
 
     return _bg;
+  }
+  
+  void save(String filename) {
+    int idx = 0;
+    byte[] dfb = new byte[32*24];
+    for (int i : _dfile) {
+      dfb[idx++] = (byte)(i & 0xff);
+    }
+    saveBytes(filename, dfb);
+  }
+  
+  void load(String filename) {
+    byte[] dfb = loadBytes(filename);
+    int idx = 0;
+    for (byte b : dfb) {
+      _dfile[idx++] = b & 0xff;
+    }
   }
 }

@@ -15,6 +15,10 @@ class DFileZX81
     cls();
   }
 
+  PImage charimg(int n) {
+    return _font.character(n);
+  }
+
   void setcurpos(int x, int y) {
     _cursorx = x;
     _cursory = y;
@@ -23,7 +27,7 @@ class DFileZX81
   int cursorx() {
     return _cursorx;
   }
-  
+
   int cursory() {
     return _cursory;
   }
@@ -34,7 +38,33 @@ class DFileZX81
     _cursory = 0;
   }
 
-  void cursorback() {
+  void fill(char c) {
+    fill(0, 0, 32, 24, c);
+  }
+
+  void fill(int x, int y, int w, int h, char c) {
+    for (int yy = y; yy < y + h; ++yy) {
+      for (int xx = x; xx < x + w; ++xx) {
+        _dfile[xx + (yy * 32)] = c;
+      }
+    }
+  }
+
+  void cursorup() {
+    --_cursory;
+    if (_cursory == -1) {
+      _cursory = 23;
+    }
+  }
+
+  void cursordown() {
+    ++_cursory;
+    if (_cursory == 24) {
+      _cursory = 0;
+    }
+  }
+
+  void cursorleft() {
     --_cursorx;
     if (_cursorx == -1) {
       _cursorx = 31;
@@ -45,7 +75,7 @@ class DFileZX81
     }
   }
 
-  void cursorforward() {
+  void cursorright() {
     _cursorx++;
     if (_cursorx == 32) {
       _cursorx = 0;
@@ -58,7 +88,11 @@ class DFileZX81
 
   void putc(char c) {
     _dfile[_cursorx + 32 * _cursory] = Charxlate.a2z(c);
-    cursorforward();
+    cursorright();
+  }
+
+  void setz(int x, int y, char c) {
+    _dfile[x + 32 * y] = c;
   }
 
   int getc(int x, int y) {
@@ -133,7 +167,7 @@ class DFileZX81
 
     return _bg;
   }
-  
+
   void save(String filename) {
     int idx = 0;
     byte[] dfb = new byte[32*24];
@@ -142,7 +176,7 @@ class DFileZX81
     }
     saveBytes(filename, dfb);
   }
-  
+
   void load(String filename) {
     byte[] dfb = loadBytes(filename);
     int idx = 0;

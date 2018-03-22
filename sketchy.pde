@@ -4,11 +4,15 @@ ControlP5 cp5;
 DFileZX81 dfile;
 
 int mode;
-boolean ctrl;
+boolean ctrl, shift;
 
 int sf = 2;
 int scnx = 4;
 int scny = 4;
+
+boolean selection;
+int selectxstart, selectystart;
+int selrectx, selrecty, selrectw, selrecth;
 
 
 int mx() {
@@ -41,8 +45,25 @@ void setup() {
 
   dfile = new DFileZX81();
 
-  cp5.addButton("load").setPosition(10, 450).setSize(100, 20);
-  cp5.addButton("save").setPosition(150, 450).setSize(100, 20);
+  selrectx = -1;
+  selrecty = -1;
+
+  cp5.addButton("load").setPosition(10, 420).setSize(100, 20);
+  cp5.addButton("save").setPosition(150, 420).setSize(100, 20);
+  cp5.addButton("fill").setPosition(10, 450).setSize(100, 20);
+  cp5.addButton("invert").setPosition(150, 450).setSize(100, 20);
+}
+
+public void fill() {
+  dfile.fill(selrectx, selrecty, selrectw, selrecth, (char)128);
+}
+
+public void invert() {
+    for (int yy = selrecty; yy < selrecty + selrecth; ++yy) {
+      for (int xx = selrectx; xx < selrectx + selrectw; ++xx) {
+        dfile.setz(xx, yy, (char)(dfile.getc(xx, yy) ^ 128));
+      }
+    }
 }
 
 public void load() {
@@ -76,7 +97,15 @@ void draw() {
     noFill();
     stroke((millis() & 512) == 512 ? color(128, 0, 0) : color(0, 128, 0));
 
-    rect((dfile.cursorx() * 8 * sf) + scnx-1, (dfile.cursory() * 8 * sf) + scny-1, 8 * sf + 1, 8 * sf + 1);
+    if (selection) {
+      rect(selrectx * 8 * sf + scnx, selrecty * 8 * sf + scny, selrectw * 8 * sf, selrecth * 8 * sf);
+    } else {
+      rect((dfile.cursorx() * 8 * sf) + scnx-1, (dfile.cursory() * 8 * sf) + scny-1, 8 * sf + 1, 8 * sf + 1);
+    }
+  }
+  for (int i = 0; i < 64; ++i) {
+    image(dfile.charimg(i), 10 + 16 * (i % 32), 490 + 16 * (i / 32));
+    image(dfile.charimg(i+128), 10 + 16 * (i % 32), 490 + 32 + 16 * (i / 32));
   }
 }
 
@@ -93,22 +122,23 @@ boolean mouseInZeddyScreen() {
 }
 
 void mousePressed() {
-  if (mouseInZeddyScreen()) {
+  if (shift) {
+    selectxstart = mx();
+    selectystart = my();
+  } else if (mouseInZeddyScreen()) {
     mode = dfile.pleek(mxhr(), myhr()) ? DFileZX81.RESET : DFileZX81.SET;
   }
 }
 
-int selrectx, selrecty, selrectw, selrecth;
-
 void mouseDragged() {
   if (ctrl) { 
     updateBit(mode);
-  } else {
-    selrectw = Math.abs(dfile.cursorx() - mx()) + 1;
-    selrecth = Math.abs(dfile.cursory() - my()) + 1;
-    selrectx = Math.min(dfile.cursorx(), mx());
-    selrecty = Math.min(dfile.cursory(), my());
-    println(selrectx, selrecty, selrectw, selrecth);
+  } else if (shift) {
+    selection = true;
+    selrectw = Math.abs(selectxstart - mx()) + 1;
+    selrecth = Math.abs(selectystart - my()) + 1;
+    selrectx = Math.min(selectxstart, mx());
+    selrecty = Math.min(selectystart, my());
   }
 }
 
@@ -116,24 +146,44 @@ void mouseDragged() {
 void mouseClicked() {
   if (!mouseInZeddyScreen()) return;
 
+  selection = false;
+
   if (ctrl) {
     updateBit(DFileZX81.XOR);
   } else {
     dfile.setcurpos(mx(), my());
+    selrectx = 0;
+    selrecty = 0;
+    selrectw = 32;
+    selrecth = 24;
   }
 }
 
 
 void keyPressed() {
   ctrl = key==CODED && keyCode == CONTROL;
-  if (ctrl) return;
+  shift = key==CODED && keyCode == SHIFT;
+  if (ctrl || shift) return;
 
-  if (key == CODED) return;
+  if (key == CODED) {
+    if (keyCode == UP) {
+      dfile.cursorup();
+    } else if (keyCode == DOWN) {
+      dfile.cursordown();
+    } else  if (keyCode == LEFT) {
+      dfile.cursorleft();
+    } else  if (keyCode == RIGHT) {
+      dfile.cursorright();
+    }
+    return;
+  }
+
+  if (selection) return;
 
   if (key == BACKSPACE) {
-    dfile.cursorback();
+    dfile.cursorleft();
     dfile.putc(' ');
-    dfile.cursorback();
+    dfile.cursorleft();
     return;
   }
 
@@ -144,5 +194,8 @@ void keyPressed() {
 void keyReleased() {
   if (key==CODED && keyCode == CONTROL) {
     ctrl = false;
+  }
+  if (key==CODED && keyCode == SHIFT) {
+    shift = false;
   }
 }

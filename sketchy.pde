@@ -98,9 +98,18 @@ void mousePressed() {
   }
 }
 
+int selrectx, selrecty, selrectw, selrecth;
 
 void mouseDragged() {
-  if (ctrl) updateBit(mode);
+  if (ctrl) { 
+    updateBit(mode);
+  } else {
+    selrectw = Math.abs(dfile.cursorx() - mx()) + 1;
+    selrecth = Math.abs(dfile.cursory() - my()) + 1;
+    selrectx = Math.min(dfile.cursorx(), mx());
+    selrecty = Math.min(dfile.cursory(), my());
+    println(selrectx, selrecty, selrectw, selrecth);
+  }
 }
 
 
